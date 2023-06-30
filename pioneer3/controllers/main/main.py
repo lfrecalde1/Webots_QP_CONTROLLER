@@ -14,7 +14,7 @@ def main(robot):
     # Get the time step of the current world.
     time_step = int(robot.getBasicTimeStep())
     # Time Definition
-    t_final = 10
+    t_final = 20
     # Sample time
     t_s = 0.03
     # Time simulation
@@ -38,10 +38,13 @@ def main(robot):
     x_dp[0, :] = 0
     x_dp[1, :] = 0
     x_dp[2, :] = 0
+
+    # Empty control error
+    he = np.zeros((2, t.shape[0]), dtype=np.double)
     
     # Definicion de las ganancias del controlador
-    k1 = 1
-    k2 = 0.5
+    k1 = 0.5
+    k2 = 1
 
     # System control values
     u = np.zeros((2, t.shape[0]), dtype = np.double)
@@ -65,7 +68,7 @@ def main(robot):
     # Parameters of the robot
     r = 0.190/2
     l = 0.381
-    a = 0.1
+    a = 0.02
     L = [r, l ,a]
 
     # Get maximun velocities
@@ -81,12 +84,18 @@ def main(robot):
     # - perform simulation steps until Webots is stopping the controller
     for k in range(0, t.shape[0]):
         if robot.step(time_step) != -1:
+            if t[k] >=10:
+                x_d[0, k] = 1
+                x_d[1, k] = 1
+            else:
+                None
             tic = time.time()
+            he[:, k] = x_d[0:2, k] - x[0:2, k]
             # Control values generation
             #opti = QP_solver(QP, x_d[:, k], x[:, k], L)
-            opti = QP_solver_all(QP, x_d[:, k], x[:, k], L)
-            #u[:, k] = controlador(x[:, k], x_d[:, k], x_dp[:, k], k1, k2, L)
-            u[:, k] = opti
+            #opti = QP_solver_all(QP, x_d[:, k], x[:, k], L)
+            u[:, k] = controlador(x[:, k], x_d[:, k], x_dp[:, k], k1, k2, L)
+            #u[:, k] = opti
             w_wheels = conversion(u[:, k], L)
 
             # Send control values to the robot
@@ -106,56 +115,65 @@ def main(robot):
 
     # Fancy plots
     fig1, ax11 = fancy_plots_1()
-    states_x, = ax11.plot(t[:], x[0,0:t.shape[0]],
-                    color='#BB5651', lw=2, ls="-")
-    states_y, = ax11.plot(t[:], x[1,0:t.shape[0]],
-                    color='#69BB51', lw=2, ls="-")
-    states_yaw, = ax11.plot(t[:], x[2,0:t.shape[0]],
-                    color='#5189BB', lw=2, ls="-")
+        ## Axis definition necesary to fancy plots
+    ax11.set_xlim((t[0], t[-1]))
 
-    states_xd, = ax11.plot(t[:], x_d[0,0:t.shape[0]],
-                    color='#BB5651', lw=2, ls="-.")
-    states_yd, = ax11.plot(t[:], x_d[1,0:t.shape[0]],
-                    color='#69BB51', lw=2, ls="-.")
+    error_x, = ax11.plot(t[0:he.shape[1]],he[0,:],
+                        color='#BB5651', lw=2, ls="-")
+    error_y, = ax11.plot(t[0:he.shape[1]],he[1,:],
+                        color='#00429d', lw=2, ls="-")
 
-    ax11.set_ylabel(r"$[states]$", rotation='vertical')
-    ax11.set_xlabel(r"$[t]$", labelpad=5)
-    ax11.legend([states_x, states_y, states_yaw, states_xd, states_yd],
-            [r'$x$', r'$y$', r'$\psi$', r'$x_d$', r'$y_d$'],
-            loc="best",
-            frameon=True, fancybox=True, shadow=False, ncol=2,
-            borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
-            borderaxespad=0.3, columnspacing=2)
+    ax11.set_ylabel(r"$\textrm{Control Error}[m]$", rotation='vertical')
+    ax11.set_xlabel(r"$\textrm{Time}[s]$", labelpad=5)
+    ax11.legend([error_x, error_y],
+                [r'$^i \tilde{x}_c$', r'$^i \tilde{y}_c$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
     ax11.grid(color='#949494', linestyle='-.', linewidth=0.5)
 
-    fig1.savefig("states_xyz.eps")
-    fig1.savefig("states_xyz.png")
+    fig1.savefig("control_error.eps")
+    fig1.savefig("control_error.png")
     fig1
     plt.show()
 
-    fig2, ax21 = fancy_plots_1()
-    control_u, = ax21.plot(t[:], u[0,0:t.shape[0]],
-                    color='#BB5651', lw=2, ls="-")
-    control_w, = ax21.plot(t[:], u[1,0:t.shape[0]],
-                    color='#69BB51', lw=2, ls="-")
+    fig2, ax12, ax22 = fancy_plots_2()
+    ## Axis definition necesary to fancy plots
+    ax12.set_xlim((t[0], t[-1]))
+    ax22.set_xlim((t[0], t[-1]))
+    ax12.set_xticklabels([])
 
-    real_u, = ax21.plot(t[:], u_r[0,0:t.shape[0]],
-                    color='#BB5651', lw=2, ls="-.")
-    real_w, = ax21.plot(t[:], u_r[1,0:t.shape[0]],
-                    color='#69BB51', lw=2, ls="-.")
+    state_q1p_d, = ax12.plot(t,u[0,0:t.shape[0]],
+                    color='#00429d', lw=2, ls="-")
+    state_q1p, = ax12.plot(t,u_r[0,0:t.shape[0]],
+                    color='#9e4941', lw=2, ls="-.")
 
-    ax21.set_ylabel(r"$[Velocities]$", rotation='vertical')
-    ax21.set_xlabel(r"$[t]$", labelpad=5)
-    ax21.legend([control_u, control_w, real_u, real_w],
-            [r'$x\mu$', r'$\omega$', r'$\mu_r$', r'$\omega_r$'],
+    state_q2p_d, = ax22.plot(t,u[1,0:t.shape[0]],
+                    color='#ac7518', lw=2, ls="-")
+    state_q2p, = ax22.plot(t,u_r[1,0:t.shape[0]],
+                    color='#97a800', lw=2, ls="-.")
+
+    ax12.set_ylabel(r"$[m/s]$", rotation='vertical')
+    ax12.legend([state_q1p_d,state_q1p],
+            [r'$\mu^c$', r'$\mu$'],
             loc="best",
             frameon=True, fancybox=True, shadow=False, ncol=2,
             borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
             borderaxespad=0.3, columnspacing=2)
-    ax21.grid(color='#949494', linestyle='-.', linewidth=0.5)
+    ax12.grid(color='#949494', linestyle='-.', linewidth=0.5)
 
-    fig2.savefig("control_signals.eps")
-    fig2.savefig("control_signals.png")
+    ax22.set_ylabel(r"$[rad/s]$", rotation='vertical')
+    ax22.set_xlabel(r"$\textrm{Time}[s]$", labelpad=5)
+    ax22.legend([state_q2p_d, state_q2p],
+            [r'$\omega^c$', r'$\omega$'],
+            loc="best",
+            frameon=True, fancybox=True, shadow=False, ncol=2,
+            borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+            borderaxespad=0.3, columnspacing=2)
+    ax22.grid(color='#949494', linestyle='-.', linewidth=0.5)
+    fig2.savefig("system_states_noise.eps")
+    fig2.savefig("system_states_noise.png")
     fig2
     plt.show()
     return None

@@ -124,7 +124,7 @@ def controlador(h, hd, hdp, k1, k2, L):
     # Jacobian Matrix Definition
     J = Jacobian_system(L, h)
 
-    control=np.linalg.inv(J)@(hdp+K2@np.tanh(np.linalg.inv(K2)@K1@e))
+    control=np.linalg.inv(J)@(hdp+1*np.tanh(e))
     return control[:, 0]
     
 def conversion(v, L):
@@ -212,7 +212,7 @@ def QP_controller_all(hd, h, L):
     norm_error = np.linalg.norm(he[0:2])
 
     Pn = sparse.csc_matrix([[1, 0], [0, 1]])
-    Pm = sparse.csc_matrix([[10, 0, 0], [0, 10, 0], [0, 0, 0/(1+norm_error)]])
+    Pm = sparse.csc_matrix([[20, 0, 0], [0, 20, 0], [0, 0, 0/(1+norm_error)]])
 
     P = sparse.block_diag([Pn, Pm], format='csc')
     J = Jacobian_system_complete(L, h)
@@ -257,11 +257,11 @@ def QP_solver_all(prob, hd, h, L):
     m = 3
     # Control error
     e = hd - h
-    he = 1*np.tanh((e))
+    he = 2*np.tanh((e))
     norm_error = np.linalg.norm(he[0:2])
 
     Pn = sparse.csc_matrix([[1, 0], [0, 1]])
-    Pm = sparse.csc_matrix([[10, 0, 0], [0, 10, 0], [0, 0, 0/(1+norm_error)]])
+    Pm = sparse.csc_matrix([[40, 0, 0], [0, 40, 0], [0, 0, 0/(1+norm_error)]])
     P = sparse.block_diag([Pn, Pm], format='csc')
     # Jacobian System
     J = Jacobian_system_complete(L, h)

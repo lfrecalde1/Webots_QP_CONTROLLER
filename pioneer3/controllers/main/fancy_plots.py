@@ -20,7 +20,7 @@ def fancy_plots_2():
     fig_proportion = (3.0 / 3.0)
     csize = inverse_latex_scale * fig_proportion * text_width_in_inches
     # always 1.0 on the first argument
-    fig_size = (1.0 * csize, 0.7 * csize)
+    fig_size = (1.0 * csize, 0.3 * csize)
     # find out the fontsize of your latex text, and put it here
     text_size = inverse_latex_scale * 10
     label_size = inverse_latex_scale * 10
@@ -76,7 +76,7 @@ def fancy_plots_1():
     fig_proportion = (3.0 / 3.0)
     csize = inverse_latex_scale * fig_proportion * text_width_in_inches
     # always 1.0 on the first argument
-    fig_size = (1.0 * csize, 0.7 * csize)
+    fig_size = (1.0 * csize, 0.3 * csize)
     # find out the fontsize of your latex text, and put it here
     text_size = inverse_latex_scale * 10
     label_size = inverse_latex_scale * 10
